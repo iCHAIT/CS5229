@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#i!/usr/bin/python
 
 """
 @Author <Name/Matricno>
@@ -8,6 +8,7 @@ Date :
 
 import httplib
 import json
+import time
 
 
 class flowStat(object):
@@ -69,16 +70,58 @@ flowget = flowStat('127.0.0.1')
 
 # To insert the policies for the traffic applicable to path between S1 and S2
 def S1toS2():
-    pass
+    S1Staticflow1 = {'switch':"00:00:00:00:00:00:00:01","name":"S1h1toh2","cookie":"0",
+                    "priority":"2","in_port":"1","eth_type":"0x800","ipv4_src":"10.0.0.1",
+                    "ipv4_dst":"10.0.0.2","active":"true","actions":"set_queue=1,output=2"}
+    pusher.set(S1Staticflow1)
+
+   
 
 # To insert the policies for the traffic applicable to path between S2 and S3
 def S2toS3():
-    pass
-
+    for x in range(1000, 1101):
+        val = str(x)+ "S2Staticflow3"
+        y = str(x)
+        val  = {'switch':"00:00:00:00:00:00:00:02","name":"S2h2toh3"+y,"cookie":"0",
+                    "priority":"2","in_port":"1", "protocol": "0x11", 
+                     "eth_type":"0x800","ipv4_src":"10.0.0.2", "udp_src": y, "udp_dst": y,
+                   	 "ipv4_dst":"10.0.0.3","active":"true"}
+        pusher.set(val)
+   
 # To insert the policies for the traffic applicable to path between S1 and S3
 def S1toS3():
-    pass
+    byte_count=0
+    while(1):
+        json = flowget.get("00:00:00:00:00:00:00:03")
+     #   print json
+        #byte_count = 0
+   	for i in json[u'flows']:
+             if u'ipv4_src' in i[u'match'] and u'ipv4_dst' in i[u'match']:
+                 if i[u'match'][u'ipv4_src'] == "10.0.0.1" and i[u'match'][u'ipv4_dst'] == "10.0.0.3":
+            	     byte_count = byte_count + int(i[u'byteCount'])
+	print "in while", byte_count
+        if byte_count < 2000000:
+     	    print "q1", byte_count
+            S1Staticflow3 = {'switch':"00:00:00:00:00:00:00:01","name":"S1h1toh3","cookie":"0",
+                    "priority":"2","in_port":"1","eth_type":"0x800","ipv4_src":"10.0.0.1",
+                    "ipv4_dst":"10.0.0.3","active":"true","actions":"set_queue=1,output=3"}
+ 	    #byte_count  = byte_count - 20000000
+            pusher.set(S1Staticflow3)
 
+    	elif byte_count > 2000000:
+            print "q2"
+            byte_count = byte_count - 2000000
+    	    print byte_count
+            S1Staticflow3 = {'switch':"00:00:00:00:00:00:00:01","name":"S1h1toh3","cookie":"0",
+                    "priority":"2","in_port":"1","eth_type":"0x800","ipv4_src":"10.0.0.1",
+                    "ipv4_dst":"10.0.0.3","active":"true","actions":"set_queue=2,output=3"}
+            pusher.set(S1Staticflow3)
+
+ 	   # while byte_count < 1000000:
+            #    pusher.set(S1Staticflow3)
+	#	byte_count = byte_count + int(i[u'byteCount'])
+         #   byte_count = byte_count - 1000000
+       
 
 def staticForwarding():
     # Below 4 flows are for setting up the static forwarding for the path H1->S1->S2->H2 & vice-versa
@@ -147,7 +190,9 @@ def staticForwarding():
 
 
 if __name__ =='__main__':
+    print "main"
     staticForwarding()
+    print "after main"
     #S1toS2()
     #S2toS3()
     S1toS3()
